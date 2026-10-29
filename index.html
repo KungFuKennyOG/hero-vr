@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hero VR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0c0e13; --panel: rgba(16, 19, 26, 0.92); --line: #2a3140; --fg: #e4e1d8; --muted: #8e93a0;
+    --hero: #4f8dff; --villain: #ff4b36;
+    --display: 'Silkscreen', 'Courier New', monospace; --body: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--body); overflow: hidden; }
+  canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+  [hidden] { display: none !important; }
+
+  #menu { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: radial-gradient(ellipse at center, rgba(12, 14, 19, 0.35), rgba(12, 14, 19, 0.85)); }
+  .card { width: min(520px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 26px 24px; display: grid; gap: 18px; }
+  h1 { font: 700 40px/1 var(--display); margin: 0; letter-spacing: 0.02em; }
+  h1 .h { color: var(--hero); } h1 .v { color: var(--villain); }
+  .tag { margin: -8px 0 0; color: var(--muted); }
+  .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  button { font: 700 14px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg); background: #1d2330; border: 1px solid var(--line); border-radius: 5px; padding: 15px 10px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--hero); }
+  button:focus-visible { outline: 2px solid var(--hero); outline-offset: 2px; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #playVR:not(:disabled) { background: color-mix(in oklab, var(--hero) 30%, #1d2330); border-color: var(--hero); }
+  .controls { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
+  .controls dt { color: var(--muted); white-space: nowrap; }
+  .controls dd { margin: 0; }
+  details summary { cursor: pointer; font: 400 12px var(--display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; }
+  .row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+  .row input { accent-color: var(--hero); }
+  #vrNote { color: var(--muted); font-size: 12px; margin: 0; }
+
+  #hud { position: fixed; left: 16px; top: 16px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; width: 250px; pointer-events: none; }
+  #hudRep { font: 700 14px var(--display); }
+  .bar { position: relative; height: 8px; margin: 8px 0; border-radius: 2px; background: linear-gradient(90deg, var(--hero), var(--villain)); }
+  #hudBar { position: absolute; top: -3px; width: 4px; height: 14px; background: #fff; transform: translateX(-2px); }
+  #hudCounts { color: var(--muted); font-size: 11px; }
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border: 2px solid rgba(255, 255, 255, 0.8); pointer-events: none; }
+  #toast { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); font: 700 22px var(--display); text-shadow: 0 2px 0 #000; pointer-events: none; white-space: nowrap; }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; font: 700 16px var(--display); background: var(--bg); }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="menu">
+  <div class="card">
+    <h1><span class="h">Hero</span> / <span class="v">Villain</span></h1>
+    <p class="tag">An open city and your powers. What you do with them decides who you are.</p>
+    <div class="buttons">
+      <button id="playVR" disabled>VR not available</button>
+      <button id="playDesk">Play on desktop</button>
+    </div>
+    <p id="vrNote">On Quest 3, open this page in the Meta Quest Browser and press Enter VR.</p>
+    <details open>
+      <summary>Quest controls</summary>
+      <dl class="controls">
+        <dt>Trigger</dt><dd>Fly where that hand points. Both hands = full speed.</dd>
+        <dt>Grip</dt><dd>Telekinesis: point at a car, crate or person and squeeze. Swing and let go to throw.</dd>
+        <dt>Right stick ↑↓</dt><dd>Push or pull what you're holding. ←→ snap turn.</dd>
+        <dt>Left stick</dt><dd>Walk.</dd>
+        <dt>A / X</dt><dd>Super jump.</dd>
+        <dt>B / Y</dt><dd>Dive. Hit the ground fast for a shockwave slam.</dd>
+      </dl>
+    </details>
+    <details>
+      <summary>Desktop controls</summary>
+      <dl class="controls">
+        <dt>Mouse</dt><dd>Look (click the game to capture the mouse).</dd>
+        <dt>WASD</dt><dd>Walk, or steer while flying.</dd>
+        <dt>Space</dt><dd>Fly where you look. Hold Shift too for double thrust.</dd>
+        <dt>Right mouse</dt><dd>Telekinesis grab. Move the mouse to swing it, release to drop or fling.</dd>
+        <dt>Left mouse</dt><dd>While holding: hurl it forward.</dd>
+        <dt>Wheel</dt><dd>Push or pull what you're holding.</dd>
+        <dt>E / C</dt><dd>Super jump / dive and slam.</dd>
+      </dl>
+    </details>
+    <label class="row"><input id="comfort" type="checkbox" checked> Comfort vignette at high speed</label>
+  </div>
+</div>
+
+<div id="hud" hidden>
+  <div id="hudRep">HERO</div>
+  <div class="bar"><div id="hudBar" style="left: 30%"></div></div>
+  <div id="hudCounts"></div>
+  <div id="crosshair"></div>
+</div>
+<div id="toast" hidden></div>
+<div id="loading">Building the city…</div>
+
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+<script type="module" src="./src/game/main.js"></script>
+</body>
+</html>
