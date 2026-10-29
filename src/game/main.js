@@ -24,7 +24,7 @@ renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 renderer.setPixelRatio(1);
 renderer.xr.enabled = true;
 renderer.xr.setReferenceSpaceType('local-floor');
-renderer.xr.setFramebufferScaleFactor(0.7); // chunky pixels + a real GPU saving
+renderer.xr.setFramebufferScaleFactor(1.0); // full sharpness; drop to ~0.8 if the frame rate struggles
 renderer.xr.setFoveation(1);
 
 const scene = new THREE.Scene();
